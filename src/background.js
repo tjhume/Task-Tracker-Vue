@@ -1,5 +1,6 @@
 const { app, protocol, BrowserWindow } = require('electron');
 const isDevelopment = process.env.NODE_ENV !== 'production';
+const { createProtocol } = require('vue-cli-plugin-electron-builder/lib');
 var path = require('path');
 
 // Keep a global reference of the window object, if you don't, the window will
