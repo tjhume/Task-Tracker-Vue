@@ -17,11 +17,11 @@ const createWindow = () => {
     height: 600,
     minWidth: 800,
     minHeight: 600,
+    title: "TJ's Task Tracker",
     webPreferences: {
       nodeIntegration: true,
       devTools: false
-    },
-    icon: path.join(__dirname, 'assets/img/tj-logo-100.png')
+    }
   });
   //win.openDevTools();
 
