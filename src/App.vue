@@ -22,6 +22,10 @@ var tasks;
 var storeTasks = store.get('tasks');
 if(storeTasks != undefined){
     tasks = [...storeTasks];
+    if(tasks[tasks.length-1][0] != today){
+        tasks.push([today, []]);
+        store.set('tasks', tasks);
+    }
 }else{
     tasks = [
         [today, []]
