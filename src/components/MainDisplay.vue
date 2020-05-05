@@ -23,28 +23,22 @@
             <h3 v-if="tasks.length == 0">No tasks found</h3>
             <div class="add-task button" @click="addClicked">Add Task<i class="fas fa-plus"></i></div>
             <div v-if="yesterdayAlert != '' && tasks.length == 0" class="yesterday-alert">{{ yesterdayAlert }}</div>
-            <div v-if="tasks.length == 0 && allTasks.length > 1" @click="copyYesterday" class="button">Copy Yesterday's Tasks<i class="fas fa-plus"></i></div>
+            <div v-if="tasks.length == 0 && allTasks.length > 1 && activeIndex == allTasks.length-1" @click.stop="copyYesterday" class="button">Copy Yesterday's Tasks<i class="fas fa-plus"></i></div>
         </div>
     </div>
 </template>
 
 <script>
-
 import { eventBus } from '../main'
 
 export default {
     data(){return{
         tracking: ''
     }},
-    props: ['day', 'allTasks', 'yesterdayAlert'],
+    props: ['day', 'allTasks', 'yesterdayAlert', 'activeIndex'],
     computed: {
         tasks() {
-            for(var i = 0; i < this.allTasks.length; i++){
-                if(this.allTasks[i][0] == this.day){
-                    return this.allTasks[i][1];
-                }
-            }
-            return null;
+            return this.allTasks[this.activeIndex][1];
         }
     },
     methods: {

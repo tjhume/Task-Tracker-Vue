@@ -1,6 +1,6 @@
 <template>
-  <div id="app">
-    <tj-main :day="activeDay" :allTasks="tasks" :addingTask="addingTask" :yesterdayAlert="yesterdayAlert"></tj-main>
+  <div @click="yesterdayAlert=''" id="app">
+    <tj-main :day="activeDay" :allTasks="tasks" :addingTask="addingTask" :yesterdayAlert="yesterdayAlert" :activeIndex="activeIndex"></tj-main>
     <tj-tabs :tasks="tasks" :selectedDays="selectedDays" :activeDay="activeDay" :today="today"></tj-tabs>
     <tj-history :tasks="tasks"></tj-history>
     <tj-addtask v-if="addingTask" :day="activeDay"></tj-addtask>
@@ -85,6 +85,10 @@ export default {
             this.addingTask = false;
         });
         eventBus.$on('copyYesterday', () =>{
+            if(this.activeIndex == 0){
+                this.yesterdayAlert = 'No tasks found for yesterday';
+                return;
+            }
             for(var i = 0; i < this.tasks.length; i++){
                 if(this.yesterday == this.tasks[i][0]){
                     this.tasks[i+1][1] = [...this.tasks[i][i]];
