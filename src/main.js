@@ -5,26 +5,20 @@ Vue.config.productionTip = false
 
 export const eventBus = new Vue({
   methods: {
-    changeActiveDay(day){
-      this.$emit('setActiveDay', day);
-    },
-    removeSelectedDay(day){
-      this.$emit('removeSelectedDay', day);
+    saveTasks(){
+      this.$emit('saveTasks');
     },
     addingTask(){
       this.$emit('addingTask');
     },
-    addTask(task){
-      this.$emit('addTask', task);
+    stopAdding(){
+      this.$emit('stopAdding');
     },
-    cancelAdd(){
-      this.$emit('cancelAdd');
+    setActiveDay(day){
+      this.$emit('setActiveDay', day);
     },
-    copyYesterday(){
-      this.$emit('copyYesterday');
-    },
-    saveTasks(){
-      this.$emit('saveTasks');
+    copyPrevious(){
+      this.$emit('copyPrevious');
     }
   }
 });

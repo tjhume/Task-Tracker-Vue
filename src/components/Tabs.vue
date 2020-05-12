@@ -3,25 +3,48 @@
         <div class="content">
             <div
             v-for="(day, i) in selectedDays"
-            :key="i"
+            :key="day"
             :class="{active: day==activeDay}"
-            @click="setActiveDay(day)">{{ day }}<i v-if="day != today" @click.stop="removeSelectedDay(day)" class="fas fa-times"></i></div>
+            @click="setActiveDay(day)">{{ day }}<i v-if="day != today" @click.stop="removeSelectedDay(day, i)" class="fas fa-times"></i></div>
         </div>
     </div>
 </template>
 
 <script>
-import { eventBus } from '../main'
+import { eventBus } from '../main.js'
 
 export default {
-    props: ['selectedDays', 'activeDay', 'today'],
+
+    data(){return{
+        selectedDays: []
+    }},
+    props: ['activeDay', 'today'],
     methods: {
         setActiveDay(day){
-            eventBus.changeActiveDay(day);
+            eventBus.setActiveDay(day);
         },
-        removeSelectedDay(day){
-            eventBus.removeSelectedDay(day);
+        removeSelectedDay(day, i){
+            var active = false;
+            if(day == this.activeDay){
+                active = true;
+            }
+
+            this.selectedDays.splice(i, 1);
+
+            if(active){
+                eventBus.setActiveDay(this.selectedDays[this.selectedDays.length - 1]);
+            }
         }
+    },
+    watch: {
+        activeDay(){
+            if(this.selectedDays.indexOf(this.activeDay) === -1){
+                this.selectedDays.push(this.activeDay);
+            }
+        }
+    },
+    created(){
+        this.selectedDays.push(this.today);
     }
 }
 </script>
@@ -38,6 +61,9 @@ export default {
     .content{
         height: 100%;
         background-color: #3495D1;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
     }
     .content>div{
         display: inline-block;

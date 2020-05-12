@@ -1,44 +1,71 @@
 <template>
     <div class="main-display">
         <div class="content text-center">
-            <h2>{{ day }}</h2>
-            <ul v-if="tasks.length">
-                <li v-for="(task, i) in tasks" :key="i" :class="{disabled: tracking != '' && tracking != task.name}">
-                    <div class="col half">{{ task.name }}</div>
-                    <div v-if="task.type=='timed'" class="col half text-right">
-                        <i v-if="tracking == task.name" class="fas fa-pause" @click="stopTracking(task)"></i>
-                        <i v-else-if="task.timeRemaining == 0" class="fas fa-check"></i>
-                        <i v-else class="fas fa-play" @click="track(task)"></i>
-                        <span class="timer">{{ timeStr(task.timeRemaining) }}</span>
-                        <i @click="remove(i)" class="fas fa-times"></i>
-                    </div>
-                    <div v-else-if="task.type='simple'" class="col half text-right">
-                        <i v-if="task.status=='unchecked'" @click="check(task)" class="far fa-square"></i>
-                        <i v-else class="fas fa-check"></i>
-                        <i @click="remove(i)" class="fas fa-times"></i>
-                    </div>
-                    <div class="clear"></div>
-                </li>
+            <transition name="fade" mode="out-in">
+                <h2 :key="day">{{ day }}</h2>
+            </transition>
+            <ul v-if="tasks.length > 0">
+                <transition-group tag="div" name="slide">
+                    <li v-for="(task, i) in tasks" :key="task.name" :class="{disabled: tracking != '' && tracking != task.name}">
+                        <div class="col half">{{ task.name }}</div>
+                        <div v-if="task.type=='timed'" class="col half text-right">
+                            <i v-if="tracking == task.name" class="fas fa-pause" @click="stopTracking(task)"></i>
+                            <i v-else-if="!isToday && task.timeRemaining != 0" class="fas fa-times failed"></i>
+                            <i v-else-if="task.timeRemaining == 0" class="fas fa-check"></i>
+                            <i v-else-if="isToday" class="fas fa-play" @click="track(task)"></i>
+                            <span class="timer">{{ timeStr(task.timeRemaining) }}</span>
+                            <i v-if="isToday" @click="remove(i)" class="fas fa-times"></i>
+                            <i v-else style="padding-left: 14px; margin-left: 10px;"></i>
+                        </div>
+                        <div v-else-if="task.type='simple'" class="col half text-right">
+                            <i v-if="task.status=='unchecked' && isToday" @click="check(task)" class="far fa-square"></i>
+                            <i v-else-if="task.status=='unchecked' && !isToday" class="fas fa-times failed"></i>
+                            <i v-else class="fas fa-check"></i>
+                            <i v-if="isToday" @click="remove(i)" class="fas fa-times"></i>
+                        </div>
+                        <div class="clear"></div>
+                    </li>
+                </transition-group>
             </ul>
-            <h3 v-if="tasks.length == 0">No tasks found</h3>
-            <div class="add-task button" @click="addClicked">Add Task<i class="fas fa-plus"></i></div>
-            <div v-if="yesterdayAlert != '' && tasks.length == 0" class="yesterday-alert">{{ yesterdayAlert }}</div>
-            <div v-if="tasks.length == 0 && allTasks.length > 1 && activeIndex == allTasks.length-1" @click.stop="copyYesterday" class="button">Copy Yesterday's Tasks<i class="fas fa-plus"></i></div>
+            <h3 v-else>No tasks found</h3>
+            <transition name="slide">
+                <div v-if="isToday" class="add-task button" @click="addClicked">Add Task<i class="fas fa-plus"></i></div>
+            </transition>
+            <transition name="slide">
+                <div v-if="isToday && tasks.length == 0" @click.stop="copyPrevious" class="button">Copy From Last Day<i class="fas fa-plus"></i></div>
+            </transition>
         </div>
     </div>
 </template>
 
 <script>
 import { eventBus } from '../main'
+import Store from 'electron-store'
+var store = new Store();
+var cachedTasks = [];
 
 export default {
     data(){return{
         tracking: ''
     }},
-    props: ['day', 'allTasks', 'yesterdayAlert', 'activeIndex'],
+    // Day is the active day
+    props: ['day', 'todayTasks', 'today'],
     computed: {
-        tasks() {
-            return this.allTasks[this.activeIndex][1];
+        tasks(){
+            if(this.day == this.today){
+                return this.todayTasks;
+            }
+            for(var i = 0; i < cachedTasks.length; i++){
+                if(cachedTasks[i][0] == this.day){
+                    return cachedTasks[i][1];
+                }
+            }
+            var newTasks = store.get(this.day);
+            cachedTasks.push([this.day, newTasks]);
+            return newTasks;
+        },
+        isToday(){
+            return (this.day == this.today);
         }
     },
     methods: {
@@ -84,8 +111,8 @@ export default {
         addClicked(){
             eventBus.addingTask();
         },
-        copyYesterday(){
-            eventBus.copyYesterday();
+        copyPrevious(){
+            eventBus.copyPrevious();
         }
     }
 }
@@ -121,9 +148,11 @@ export default {
         padding: 0px;
     }
     li{
-        padding: 5px 20px;
+        padding: 5px 10px;
         font-size: 14px;
         position: relative;
+        background-color: white;
+        transition: all .5s;
     }
     li.disabled{
         opacity: 0.5;
@@ -131,6 +160,7 @@ export default {
     }
     li:nth-child(odd){
         background-color: #f1f1f1;
+        transition: all .5s;
     }
     span{
         display: inline-block;
@@ -140,6 +170,15 @@ export default {
         cursor: pointer;
         padding: 2px;
         margin-left: 10px;
+    }
+    .fa-times.failed{
+        opacity: 1;
+        color: red;
+        cursor: default;
+        position: absolute;
+        top: 7px;
+        right: 110px;
+        margin-left: 0px;
     }
     .fa-play,
     .fa-pause,
@@ -191,5 +230,37 @@ export default {
         margin-top: 20px;
         margin-bottom: 5px;
         font-size: 14px;
+    }
+    .slide-enter{
+        opacity: 0;
+    }
+    .slide-enter-active{
+        animation: slide-in .5s ease-out forwards;
+    }
+    .slide-leave-active{
+        animation: slide-out .5s ease-out forwards;
+        opacity: 0;
+        position: absolute;
+        width: 100%;
+    }
+    .slide-move{
+        transition: transform .5s;
+    }
+
+    @keyframes slide-in{
+        from{
+            transform: translateY(20px);
+        }
+        to{
+            transform: translateY(0px);
+        }
+    }
+    @keyframes slide-out{
+        from{
+            transform: translateY(0px);
+        }
+        to{
+            transform: translateY(20px);
+        }
     }
 </style>

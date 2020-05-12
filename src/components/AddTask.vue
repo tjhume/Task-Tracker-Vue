@@ -1,8 +1,8 @@
 <template>
-    <div class="add-task">
+    <div @mousedown="cancel" class="add-task">
         <div class="table">
             <div class="cell-center">
-                <div class="add-box">
+                <div class="add-box" @mousedown.stop :class="type">
                     <i @click="cancel" class="fas fa-times"></i>
                     <h2 class="text-center no-select">Add Task</h2>
                     <form @input="error = ''">
@@ -14,26 +14,34 @@
                                 <option value="timed">Timed</option>
                             </select>
                         </div>
-                        <div v-if="type!=''" class="form-group">
-                            <label for="taskname">Task Name</label>
-                            <input id="taskname" type="text" class="form-control" v-model="name">
-                        </div> 
-                        <div v-if="type=='timed'">
-                            <div class="form-group">
-                                <label for="hours">Hours</label>
-                                <input @input="validateHours" @paste.prevent @keypress="noDecimals" class="form-control" id="hours" type="number" v-model="hours">
+                        <transition name="fade">
+                            <div v-if="type!=''">
+                                <div class="form-group">
+                                    <label for="taskname">Task Name</label>
+                                    <input id="taskname" type="text" class="form-control" v-model="name">
+                                </div>
+                                <div class="error" v-if="error!=''">{{ error }}</div>
+                                <button v-if="type == 'simple'" type="submit" class="btn btn-primary" @click.prevent="addTask">Submit</button>
                             </div>
-                            <div class="form-group">
-                                <label for="minutes">Minutes</label>
-                                <input @input="validateMinutes" @paste.prevent @keypress="noDecimals" class="form-control" id="minutes" type="number" v-model="minutes">
+                        </transition>
+                        <transition name="fade">
+                            <div v-if="type=='timed'">
+                                <div class="form-group">
+                                    <label for="hours">Hours</label>
+                                    <input @input="validateHours" @paste.prevent @keypress="noDecimals" class="form-control" id="hours" type="number" v-model="hours">
+                                </div>
+                                <div class="form-group">
+                                    <label for="minutes">Minutes</label>
+                                    <input @input="validateMinutes" @paste.prevent @keypress="noDecimals" class="form-control" id="minutes" type="number" v-model="minutes">
+                                </div>
+                                <div class="form-group">
+                                    <label for="seconds">Seconds</label>
+                                    <input @input="validateSeconds" @paste.prevent @keypress="noDecimals" class="form-control" id="seconds" type="number" v-model="seconds">
+                                </div>
+                                <div class="error" v-if="error!=''">{{ error }}</div>
+                                <button type="submit" class="btn btn-primary" @click.prevent="addTask">Submit</button>
                             </div>
-                            <div class="form-group">
-                                <label for="seconds">Seconds</label>
-                                <input @input="validateSeconds" @paste.prevent @keypress="noDecimals" class="form-control" id="seconds" type="number" v-model="seconds">
-                            </div>
-                        </div>
-                        <div class="error" v-if="error!=''">{{ error }}</div>
-                        <button v-if="type != ''" type="submit" class="btn btn-primary" @click.prevent="addTask">Submit</button>
+                        </transition>
                     </form>
                 </div>
             </div>
@@ -53,9 +61,15 @@ export default {
         seconds: 0,
         error: ''
     }},
-    props: ['day'],
+    props: ['tasks'],
     methods: {
         addTask(){
+            for(var i = 0; i < this.tasks.length; i++){
+                if(this.name == this.tasks[i].name){
+                    this.error = '*That task name is already in use'
+                    return;
+                }
+            }
             if(this.type=='simple'){
                 if(this.name == ''){
                     this.error = '*Please enter a value for the task name';
@@ -66,7 +80,9 @@ export default {
                     type: 'simple',
                     status: 'unchecked'
                 };
-                eventBus.addTask(newTask);
+                this.tasks.push(newTask);
+                eventBus.saveTasks();
+                eventBus.stopAdding();
             }else if(this.type=='timed'){
                 if(this.name == ''){
                     this.error = '*Please enter a value for the task name';
@@ -83,7 +99,9 @@ export default {
                     timeRemaining: seconds,
                     totaltime: seconds
                 };
-                eventBus.addTask(newTask);
+                this.tasks.push(newTask);
+                eventBus.saveTasks();
+                eventBus.stopAdding();
             }
         },
         validateHours(){
@@ -115,8 +133,15 @@ export default {
                 e.preventDefault();
         },
         cancel(){
-            eventBus.cancelAdd();
+            eventBus.stopAdding();
         }
+    },
+    created(){
+        window.addEventListener('keydown', (e) => {
+            if (e.key == 'Escape') {
+                eventBus.stopAdding();
+            }
+        });
     }
 }
 </script>
@@ -127,7 +152,8 @@ export default {
         top: 0px;
         bottom: 0px;
         width: 100%;
-        height: 100%;
+        height: 101%;
+        overflow-y: hidden;
         background-color: rgba(0, 0, 0, 0.3);
     }
     .fa-times{
@@ -145,6 +171,15 @@ export default {
         color: white;
         padding: 20px;
         position: relative;
+        height: 180px;
+        transition: height .5s;
+        overflow: hidden;
+    }
+    .add-box.simple{
+        height: 288px;
+    }
+    .add-box.timed{
+        height: 516px;
     }
     h2{
         margin-bottom: 30px;

@@ -2,9 +2,9 @@
     <div class="history text-center no-select">
         <h2>History</h2>
         <div class="days">
-            <div v-for="(task, i) in tasks"
+            <div v-for="(day, i) in days"
             :key="i"
-            @click="setActiveDay(task[0])">{{ task[0] }}</div>
+            @click="setActiveDay(day)">{{ day }}</div>
         </div>
     </div>
 </template>
@@ -13,11 +13,15 @@
 import { eventBus } from '../main'
 
 export default {
-    props: ['tasks'],
+    props: ['days'],
     methods: {
         setActiveDay(day){
-            eventBus.changeActiveDay(day);
+            eventBus.setActiveDay(day);
         }
+    },
+    mounted(){
+        var container = this.$el.querySelector(".days");
+        container.scrollTop = container.scrollHeight;
     }
 }
 </script>
@@ -38,21 +42,31 @@ export default {
         margin-bottom: 40px;
     }
     .days{
-        width: 175px;
+        width: 125px;
         background-color: white;
         color: #2C2C2C;
         margin: 0 auto;
+        max-height: 85%;
+        overflow-y: auto;
     }
     .days div{
         padding-top: 2px;
         padding-bottom: 2px;
         font-size: 14px;
         cursor: pointer;
+        background-color: white;
+        transition: all 0.5s;
+    }
+    .days div:hover{
+        opacity: 0.5;
     }
     .days div:nth-child(1){
         padding-top: 4px;
     }
     .days div:nth-last-child(1){
         padding-bottom: 4px;
+    }
+    .days div:nth-child(even){
+        background-color: #f1f1f1;
     }
 </style>

@@ -1,46 +1,53 @@
 <template>
-  <div @click="yesterdayAlert=''" id="app">
-    <tj-main :day="activeDay" :allTasks="tasks" :addingTask="addingTask" :yesterdayAlert="yesterdayAlert" :activeIndex="activeIndex"></tj-main>
-    <tj-tabs :tasks="tasks" :selectedDays="selectedDays" :activeDay="activeDay" :today="today"></tj-tabs>
-    <tj-history :tasks="tasks"></tj-history>
-    <tj-addtask v-if="addingTask" :day="activeDay"></tj-addtask>
+  <div id="app">
+    <tj-main :today="today" :day="activeDay" :todayTasks="tasks"></tj-main>
+    <tj-tabs :today="today" :activeDay="activeDay"></tj-tabs>
+    <tj-history :days="allDays"></tj-history>
+    <transition name="fade">
+        <tj-addtask v-if="addingTask" :tasks="tasks"></tj-addtask>
+    </transition>
   </div>
 </template>
 
 <script>
+// Components
 import History from './components/History'
 import Tabs from './components/Tabs'
 import MainDisplay from './components/MainDisplay'
 import AddTask from './components/AddTask'
+
+// Other
 import { eventBus } from './main'
 import Store from 'electron-store'
 var store = new Store();
 var today = getDate();
-var yesterday = getYesterday();
 
+// Set up tasks/history and store
 var tasks;
-var storeTasks = store.get('tasks');
+var storeTasks = store.get(today);
+var allDays = store.get('days');
 if(storeTasks != undefined){
-    tasks = [...storeTasks];
-    if(tasks[tasks.length-1][0] != today){
-        tasks.push([today, []]);
-        store.set('tasks', tasks);
-    }
+    tasks = storeTasks;
 }else{
-    tasks = [
-        [today, []]
-    ]
+    tasks = [];
+    store.set(today, tasks);
+    if(allDays != undefined){
+        allDays.push(today);
+    }else{
+        allDays = [];
+        allDays.push(today);
+    }
+    // The only time we need to set all days (on startup if it is a new day)
+    store.set('days', allDays);
 }
 
 export default {
     data(){return{
-        selectedDays: [today],
-        activeDay: today,
         today: today,
-        yesterday: yesterday,
+        activeDay: today,
+        allDays: allDays,
         tasks: tasks,
-        addingTask: false,
-        yesterdayAlert: ''
+        addingTask: false
     }},
     components: {
         'tj-history': History,
@@ -48,77 +55,41 @@ export default {
         'tj-main': MainDisplay,
         'tj-addtask': AddTask
     },
-    computed: {
-        activeIndex(){
-            for(var i = 0; i < this.tasks.length; i++){
-                if(this.activeDay == this.tasks[i][0]) return i;
-            }
-            return 0;
-        }
-    },
     created(){
-        eventBus.$on('setActiveDay', (day) => {
-            if(this.selectedDays.indexOf(day) === -1)
-                this.selectedDays.push(day);
-            this.activeDay = day;
+        eventBus.$on('saveTasks', () => {
+            store.set(today, this.tasks);
         });
-        eventBus.$on('removeSelectedDay', (day) =>{
-            for(var i = 0; i < this.selectedDays.length; i++){
-                if(this.selectedDays[i] == day){
-                    this.$delete(this.selectedDays, i);
-                    break;
-                }
-            }
-            if(this.activeDay == day)
-                this.activeDay = this.selectedDays[this.selectedDays.length - 1];
-        });
-        eventBus.$on('addingTask', () =>{
+        eventBus.$on('addingTask', () => {
             this.addingTask = true;
         });
-        eventBus.$on('addTask', (task) =>{
-            this.tasks[this.activeIndex][1].push(task);
-            store.set('tasks', this.tasks);
-            this.addingTask = false;
-            return;
-        }),
-        eventBus.$on('cancelAdd', () =>{
+        eventBus.$on('stopAdding', () => {
             this.addingTask = false;
         });
-        eventBus.$on('copyYesterday', () =>{
-            if(this.activeIndex == 0){
-                this.yesterdayAlert = 'No tasks found for yesterday';
-                return;
-            }
-            for(var i = 0; i < this.tasks.length; i++){
-                if(this.yesterday == this.tasks[i][0]){
-                    this.tasks[i+1][1] = [...this.tasks[i][i]];
-                    store.set('tasks', this.tasks);
+        eventBus.$on('setActiveDay', (day) => {
+            this.activeDay = day;
+        });
+        eventBus.$on('copyPrevious', () => {
+            if(allDays.length < 2) return;
+
+            for(var i = allDays.length-2; i >= 0; i--){
+                var previousTasks = store.get(allDays[i]);
+                if(previousTasks != undefined && previousTasks.length > 0){
+                    this.tasks = previousTasks;
                     return;
                 }
             }
-            this.yesterdayAlert = 'No tasks found for yesterday';
+            console.log('No tasks found!');
+            return;
         });
-        eventBus.$on('saveTasks', () =>{
-            store.set('tasks', this.tasks);
-        })
     }
 }
 
 function getDate(){
-    var d = new Date();
-    var month = d.getMonth()+1;
-    var day = d.getDate();
-    var output = (month<10 ? '0' : '') + month + '/' + (day<10 ? '0' : '') + day + '/' + d.getFullYear();
-    return output;
-}
-
-function getYesterday(){
-    var d = new Date();
-    d.setDate(d.getDate() - 1);
-    var month = d.getMonth()+1;
-    var day = d.getDate();
-    var output = (month<10 ? '0' : '') + month + '/' + (day<10 ? '0' : '') + day + '/' + d.getFullYear();
-    return output;
+  var d = new Date();
+  var month = d.getMonth()+1;
+  var day = d.getDate();
+  var output = (month<10 ? '0' : '') + month + '/' + (day<10 ? '0' : '') + day + '/' + d.getFullYear();
+  return output;
 }
 
 </script>
@@ -200,13 +171,24 @@ function getYesterday(){
       border-radius: 3px;
   }
   ::-webkit-scrollbar-track {
-      background: transparent;
+      background: #ccc;
   }
   ::-webkit-scrollbar-thumb {
-      background: #bbb;
+      background: #a5a5a5;
   }
   ::-webkit-scrollbar-thumb:hover {
-      background: #aaa;
+      background: #919191;
   }
 
+    .fade-enter-active,
+    .fade-leave-active{
+        transition: all 0.5s;
+    }
+    .fade-enter, .fade-leave-to{
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    .fade-move{
+        transition: transform 0.5s;
+    }
 </style>
