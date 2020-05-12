@@ -68,6 +68,11 @@ export default {
         eventBus.$on('setActiveDay', (day) => {
             this.activeDay = day;
         });
+        eventBus.$on('reOrder', (newVal) => {
+            if(this.activeDay == this.today)
+                this.tasks = newVal;
+                store.set(today, this.tasks);
+        });
         eventBus.$on('copyPrevious', () => {
             if(allDays.length < 2) return;
 
@@ -78,7 +83,6 @@ export default {
                     return;
                 }
             }
-            console.log('No tasks found!');
             return;
         });
     }

@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import App from './App.vue'
 
-Vue.config.productionTip = false
+Vue.config.productionTip = false;
 
 export const eventBus = new Vue({
   methods: {
@@ -19,6 +19,9 @@ export const eventBus = new Vue({
     },
     copyPrevious(){
       this.$emit('copyPrevious');
+    },
+    reOrder(newVal){
+      this.$emit('reOrder', newVal);
     }
   }
 });

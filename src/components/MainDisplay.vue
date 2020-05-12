@@ -5,27 +5,29 @@
                 <h2 :key="day">{{ day }}</h2>
             </transition>
             <ul v-if="tasks.length > 0">
-                <transition-group tag="div" name="slide">
-                    <li v-for="(task, i) in tasks" :key="task.name" :class="{disabled: tracking != '' && tracking != task.name}">
-                        <div class="col half">{{ task.name }}</div>
-                        <div v-if="task.type=='timed'" class="col half text-right">
-                            <i v-if="tracking == task.name" class="fas fa-pause" @click="stopTracking(task)"></i>
-                            <i v-else-if="!isToday && task.timeRemaining != 0" class="fas fa-times failed"></i>
-                            <i v-else-if="task.timeRemaining == 0" class="fas fa-check"></i>
-                            <i v-else-if="isToday" class="fas fa-play" @click="track(task)"></i>
-                            <span class="timer">{{ timeStr(task.timeRemaining) }}</span>
-                            <i v-if="isToday" @click="remove(i)" class="fas fa-times"></i>
-                            <i v-else style="padding-left: 14px; margin-left: 10px;"></i>
-                        </div>
-                        <div v-else-if="task.type='simple'" class="col half text-right">
-                            <i v-if="task.status=='unchecked' && isToday" @click="check(task)" class="far fa-square"></i>
-                            <i v-else-if="task.status=='unchecked' && !isToday" class="fas fa-times failed"></i>
-                            <i v-else class="fas fa-check"></i>
-                            <i v-if="isToday" @click="remove(i)" class="fas fa-times"></i>
-                        </div>
-                        <div class="clear"></div>
-                    </li>
-                </transition-group>
+                <draggable v-if="isToday" v-model="tasks">
+                    <transition-group tag="div" name="slide">
+                        <li v-for="(task, i) in tasks" :key="task.name" :class="{disabled: tracking != '' && tracking != task.name}">
+                            <div class="col half">{{ task.name }}</div>
+                            <div v-if="task.type=='timed'" class="col half text-right">
+                                <i v-if="tracking == task.name" class="fas fa-pause" @click="stopTracking(task)"></i>
+                                <i v-else-if="!isToday && task.timeRemaining != 0" class="fas fa-times failed"></i>
+                                <i v-else-if="task.timeRemaining == 0" class="fas fa-check"></i>
+                                <i v-else-if="isToday" class="fas fa-play" @click="track(task)"></i>
+                                <span class="timer">{{ timeStr(task.timeRemaining) }}</span>
+                                <i v-if="isToday" @click="remove(i)" class="fas fa-times"></i>
+                                <i v-else style="padding-left: 14px; margin-left: 10px;"></i>
+                            </div>
+                            <div v-else-if="task.type='simple'" class="col half text-right">
+                                <i v-if="task.status=='unchecked' && isToday" @click="check(task)" class="far fa-square"></i>
+                                <i v-else-if="task.status=='unchecked' && !isToday" class="fas fa-times failed"></i>
+                                <i v-else class="fas fa-check"></i>
+                                <i v-if="isToday" @click="remove(i)" class="fas fa-times"></i>
+                            </div>
+                            <div class="clear"></div>
+                        </li>
+                    </transition-group>
+                </draggable>
             </ul>
             <h3 v-else>No tasks found</h3>
             <transition name="slide">
@@ -41,6 +43,7 @@
 <script>
 import { eventBus } from '../main'
 import Store from 'electron-store'
+import draggable from 'vuedraggable'
 var store = new Store();
 var cachedTasks = [];
 
@@ -51,18 +54,23 @@ export default {
     // Day is the active day
     props: ['day', 'todayTasks', 'today'],
     computed: {
-        tasks(){
-            if(this.day == this.today){
-                return this.todayTasks;
-            }
-            for(var i = 0; i < cachedTasks.length; i++){
-                if(cachedTasks[i][0] == this.day){
-                    return cachedTasks[i][1];
+        tasks: {
+            get(){
+                if(this.day == this.today){
+                    return this.todayTasks;
                 }
+                for(var i = 0; i < cachedTasks.length; i++){
+                    if(cachedTasks[i][0] == this.day){
+                        return cachedTasks[i][1];
+                    }
+                }
+                var newTasks = store.get(this.day);
+                cachedTasks.push([this.day, newTasks]);
+                return newTasks;
+            },
+            set(newVal){
+                eventBus.reOrder(newVal);
             }
-            var newTasks = store.get(this.day);
-            cachedTasks.push([this.day, newTasks]);
-            return newTasks;
         },
         isToday(){
             return (this.day == this.today);
@@ -114,6 +122,9 @@ export default {
         copyPrevious(){
             eventBus.copyPrevious();
         }
+    },
+    components: {
+        'draggable': draggable
     }
 }
 </script>
