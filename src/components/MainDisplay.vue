@@ -5,9 +5,9 @@
                 <h2 :key="day">{{ day }}</h2>
             </transition>
             <ul v-if="tasks.length > 0">
-                <draggable v-if="isToday" v-model="tasks">
+                <draggable v-model="tasks" draggable=".today">
                     <transition-group tag="div" name="slide">
-                        <li v-for="(task, i) in tasks" :key="task.name" :class="{disabled: tracking != '' && tracking != task.name}">
+                        <li v-for="(task, i) in tasks" :key="task.name" :class="{disabled: tracking != '' && tracking != task.name, today: isToday}">
                             <div class="col half">{{ task.name }}</div>
                             <div v-if="task.type=='timed'" class="col half text-right">
                                 <i v-if="tracking == task.name" class="fas fa-pause" @click="stopTracking(task)"></i>
@@ -30,10 +30,10 @@
                 </draggable>
             </ul>
             <h3 v-else>No tasks found</h3>
-            <transition name="slide">
+            <transition name="fade">
                 <div v-if="isToday" class="add-task button" @click="addClicked">Add Task<i class="fas fa-plus"></i></div>
             </transition>
-            <transition name="slide">
+            <transition name="fade">
                 <div v-if="isToday && tasks.length == 0" @click.stop="copyPrevious" class="button">Copy From Last Day<i class="fas fa-plus"></i></div>
             </transition>
         </div>

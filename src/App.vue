@@ -189,7 +189,7 @@ function getDate(){
         transition: all 0.5s;
     }
     .fade-enter, .fade-leave-to{
-        opacity: 0;
+        opacity: 0 !important;
         transform: translateY(-10px);
     }
     .fade-move{
