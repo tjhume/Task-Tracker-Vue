@@ -4,7 +4,7 @@
             <transition name="fade" mode="out-in">
                 <h2 :key="day">{{ day }}</h2>
             </transition>
-            <ul v-if="tasks.length > 0">
+            <ul v-if="tasks.length > 0" :style="{height: tasks.length*30 + 'px'}">
                 <draggable v-model="tasks" draggable=".today">
                     <transition-group tag="div" name="slide">
                         <li v-for="(task, i) in tasks" :key="task.name" :class="{disabled: tracking != '' && tracking != task.name, today: isToday}">
@@ -145,6 +145,10 @@ export default {
         padding-top: 40px;
         overflow-y: auto;
     }
+    .col{
+        white-space: nowrap;
+        overflow-x: auto;
+    }
     h3{
         margin-top: 40px;
     }
@@ -157,6 +161,7 @@ export default {
         margin-right: auto;
         list-style-type: none;
         padding: 0px;
+        transition: height 0.5s;
     }
     li{
         padding: 5px 10px;
@@ -164,6 +169,7 @@ export default {
         position: relative;
         background-color: white;
         transition: all .5s;
+        height: 30px;
     }
     li.disabled{
         opacity: 0.5;
