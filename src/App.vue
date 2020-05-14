@@ -79,7 +79,12 @@ export default {
             for(var i = allDays.length-2; i >= 0; i--){
                 var previousTasks = store.get(allDays[i]);
                 if(previousTasks != undefined && previousTasks.length > 0){
+                    for(var j = 0; j < previousTasks.length; j++){
+                        if(previousTasks[j].type == 'simple' && previousTasks[j].status == 'checked') previousTasks[j].status = 'unchecked';
+                        else if(previousTasks[j].type == 'timed') previousTasks[j].timeRemaining = previousTasks[j].totaltime;
+                    }
                     this.tasks = previousTasks;
+                    store.set(today, this.tasks);
                     return;
                 }
             }
